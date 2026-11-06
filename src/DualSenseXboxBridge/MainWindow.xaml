@@ -1,0 +1,62 @@
+<Window x:Class="DualSenseXboxBridge.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="DualSense Xbox Bridge" Height="650" Width="980"
+ MinHeight="600" MinWidth="900" Background="{StaticResource Bg}"
+ Foreground="White" WindowStartupLocation="CenterScreen">
+ <Grid Margin="26">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <DockPanel Grid.Row="0" Margin="0,0,0,22">
+   <StackPanel>
+    <TextBlock Text="DUALSENSE  →  XBOX" FontSize="25" FontWeight="Bold"/>
+    <TextBlock Text="Controller bridge • Windows 10/11" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/>
+   </StackPanel>
+   <Border DockPanel.Dock="Right" Background="#253447" CornerRadius="8" Padding="14,8" VerticalAlignment="Center">
+    <TextBlock Text="ALPHA • SAFE MODE" Foreground="#FFD479" FontWeight="SemiBold"/>
+   </Border>
+  </DockPanel>
+  <Border Grid.Row="1" Background="{StaticResource Panel}" CornerRadius="12" Padding="18" Margin="0,0,0,16">
+   <Grid>
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel>
+     <TextBlock Text="PHYSICAL CONTROLLER" Foreground="{StaticResource Muted}" FontSize="12" FontWeight="Bold"/>
+     <TextBlock x:Name="DeviceText" Text="Searching for DualSense…" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,0"/>
+     <TextBlock x:Name="DeviceDetail" Text="USB / Bluetooth discovery" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
+    </StackPanel>
+    <Button Grid.Column="1" Content="Refresh devices" Padding="18,10" Click="Refresh_Click" VerticalAlignment="Center"/>
+   </Grid>
+  </Border>
+  <Grid Grid.Row="2">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="1.2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border Background="{StaticResource Panel}" CornerRadius="12" Padding="20" Margin="0,0,12,0">
+    <StackPanel>
+     <TextBlock Text="VIRTUAL XBOX CONTROLLER" Foreground="{StaticResource Muted}" FontWeight="Bold" FontSize="12"/>
+     <TextBlock Text="Xbox 360 (XInput)" FontSize="22" FontWeight="SemiBold" Margin="0,9,0,4"/>
+     <TextBlock x:Name="BackendText" Text="Backend: not connected" Foreground="{StaticResource Muted}"/>
+     <Separator Margin="0,20"/>
+     <TextBlock Text="Conversion status" FontWeight="SemiBold"/>
+     <TextBlock x:Name="StatusText" Text="Disabled — parser requires hardware verification." TextWrapping="Wrap" Foreground="#FFD479" Margin="0,8,0,16"/>
+     <Button x:Name="StartButton" Content="Enable Xbox Mode" Padding="15,13" IsEnabled="True" Click="Start_Click"/>
+     <Button Content="Restore / Disconnect" Padding="15,11" Margin="0,9,0,0" Click="Stop_Click"/>
+     <TextBlock Text="Test in joy.cpl only. Do not use for gameplay until the driver backend and HidHide are verified." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" Margin="0,16,0,0"/>
+    </StackPanel>
+   </Border>
+   <Border Grid.Column="1" Background="{StaticResource Panel}" CornerRadius="12" Padding="20" Margin="12,0,0,0">
+    <StackPanel>
+     <TextBlock Text="SYSTEM CHECKS" Foreground="{StaticResource Muted}" FontWeight="Bold" FontSize="12"/>
+     <TextBlock Text="Windows" Margin="0,18,0,3" FontWeight="SemiBold"/>
+     <TextBlock x:Name="WindowsText" Foreground="{StaticResource Muted}"/>
+     <TextBlock Text="HID device discovery" Margin="0,16,0,3" FontWeight="SemiBold"/>
+     <TextBlock x:Name="HidText" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+     <TextBlock Text="HidHide" Margin="0,16,0,3" FontWeight="SemiBold"/>
+     <TextBlock Text="Not modified by this prototype" Foreground="{StaticResource Muted}"/>
+     <TextBlock Text="Driver installation" Margin="0,16,0,3" FontWeight="SemiBold"/>
+     <TextBlock Text="Manual only — no driver changes" Foreground="{StaticResource Muted}"/>
+     <TextBlock Text="Safety" Margin="0,16,0,3" FontWeight="SemiBold"/>
+     <TextBlock Text="No device hiding, registry edits, or background driver installation." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+    </StackPanel>
+   </Border>
+  </Grid>
+  <TextBlock Grid.Row="3" Text="DualSense Xbox Bridge • Source prototype • Not yet validated with a physical controller" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,18,0,0"/>
+ </Grid>
+</Window>

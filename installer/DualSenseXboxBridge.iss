@@ -1,5 +1,6 @@
 ; Inno Setup script for DualSense Xbox Bridge.
-; Installs per user (no admin), never installs drivers, never deletes user settings on uninstall.
+; Per-user install (no admin). Never installs drivers silently: the bundled usbip-win2
+; installer runs only when the user ticks the optional task, and it self-elevates via UAC.
 
 #ifndef AppVersion
   #define AppVersion "1.0.0"
@@ -11,6 +12,10 @@
 
 #ifndef OutputDir
   #define OutputDir "..\artifacts"
+#endif
+
+#ifndef ThirdPartyDir
+  #define ThirdPartyDir "..\thirdparty"
 #endif
 
 [Setup]
@@ -50,10 +55,16 @@ Name: "startup"; Description: "Start DualSense Xbox Bridge with &Windows"; Group
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ThirdPartyDir}\viiper\viiper.exe"; DestDir: "{app}\thirdparty\viiper"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#ThirdPartyDir}\usbip-win2\*.exe"; DestDir: "{app}\thirdparty\usbip-win2"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "{#ThirdPartyDir}\licenses\*"; DestDir: "{app}\thirdparty\licenses"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\DualSense Xbox Bridge"; Filename: "{app}\DualSenseXboxBridge.exe"
+Name: "{group}\Install USB/IP driver (administrator)"; Filename: "{app}\thirdparty\usbip-win2\USBip-0.9.8.1-x64.exe"; Flags: createonlyiffileexists
 Name: "{group}\Driver requirements"; Filename: "{app}\README-DRIVER.md"
+Name: "{group}\Third-party notices"; Filename: "{app}\THIRD_PARTY_NOTICES.md"
 Name: "{group}\Uninstall DualSense Xbox Bridge"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\DualSense Xbox Bridge"; Filename: "{app}\DualSenseXboxBridge.exe"; Tasks: desktopicon
 
@@ -62,12 +73,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\DualSenseXboxBridge.exe"; Description: "Launch DualSense Xbox Bridge"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\thirdparty\usbip-win2\USBip-0.9.8.1-x64.exe"; Description: "Install the USB/IP driver now (administrator, recommended)"; Flags: nowait postinstall skipifsilent unchecked; Check: FileExists(ExpandConstant('{app}\thirdparty\usbip-win2\USBip-0.9.8.1-x64.exe'))
 Filename: "{app}\README-DRIVER.md"; Description: "Open the driver requirements guide"; Flags: shellexec nowait postinstall skipifsilent unchecked
 
 ; User settings in %LOCALAPPDATA%\DualSenseXboxBridge are intentionally kept on uninstall.
-
-[Code]
-procedure InitializeWizard();
-begin
-  { Nothing to configure: the installer never installs or modifies drivers. }
-end;

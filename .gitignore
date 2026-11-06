@@ -19,3 +19,8 @@ Thumbs.db
 
 # Local tooling
 .dotnet/
+
+# Bundled third-party binaries (downloaded by scripts/fetch-thirdparty.ps1)
+thirdparty/viiper/
+thirdparty/usbip-win2/
+thirdparty/*.exe

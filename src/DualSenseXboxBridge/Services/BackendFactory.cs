@@ -41,8 +41,20 @@ public static class BackendFactory
         return CreateViiper(settings);
     }
 
-    private static ViiperBackend CreateViiper(AppSettings settings) =>
-        new(settings.ViiperHost, settings.ViiperPort, settings.ViiperServerPath, settings.ViiperAutoLaunch);
+    private static ViiperBackend CreateViiper(AppSettings settings)
+    {
+        var configured = string.IsNullOrWhiteSpace(settings.ViiperServerPath)
+            ? null
+            : settings.ViiperServerPath!.Trim();
+
+        var path = configured is not null && File.Exists(configured)
+            ? configured
+            : ViiperServerLocator.FindBundled();
+
+        // A bundled server is started on demand when the user enables Xbox mode.
+        var autoLaunch = settings.ViiperAutoLaunch || !string.IsNullOrWhiteSpace(path);
+        return new ViiperBackend(settings.ViiperHost, settings.ViiperPort, path, autoLaunch);
+    }
 
     private static bool IsPortOpen(string host, int port)
     {

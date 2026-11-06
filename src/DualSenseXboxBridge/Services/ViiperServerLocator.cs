@@ -1,10 +1,31 @@
 namespace DualSenseXboxBridge.Services;
 
-/// <summary>Finds a VIIPER server binary next to the app, in the user profile, or on PATH.</summary>
+/// <summary>
+/// Finds a VIIPER server binary: the copy bundled with the installer first, then a copy next to
+/// the app, in the user profile, or on PATH.
+/// </summary>
 public static class ViiperServerLocator
 {
+    public static string? FindBundled()
+    {
+        var baseDirectory = AppContext.BaseDirectory;
+        var candidates = new[]
+        {
+            Path.Combine(baseDirectory, "thirdparty", "viiper", "viiper.exe"),
+            Path.Combine(baseDirectory, "viiper.exe")
+        };
+
+        return candidates.FirstOrDefault(File.Exists);
+    }
+
     public static string? Find()
     {
+        var bundled = FindBundled();
+        if (bundled is not null)
+        {
+            return bundled;
+        }
+
         foreach (var candidate in LocalCandidates())
         {
             if (File.Exists(candidate))
@@ -35,10 +56,6 @@ public static class ViiperServerLocator
 
     private static IEnumerable<string> LocalCandidates()
     {
-        var baseDirectory = AppContext.BaseDirectory;
-        yield return Path.Combine(baseDirectory, "viiper.exe");
-        yield return Path.Combine(baseDirectory, "viiper", "viiper.exe");
-
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         yield return Path.Combine(localAppData, "VIIPER", "viiper.exe");
         yield return Path.Combine(localAppData, "Programs", "VIIPER", "viiper.exe");

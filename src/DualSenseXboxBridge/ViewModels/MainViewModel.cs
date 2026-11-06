@@ -17,6 +17,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly SettingsStore _store;
     private readonly HidHideService _hidHide = new();
+    private readonly DriverSetupService _driverSetup = new();
     private readonly BridgeService _bridge = new();
     private readonly HidSharpDualSenseSource _source = new();
     private AppSettings _settings;
@@ -39,6 +40,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isBackendConnected;
     private bool _isHidHideInstalled;
     private bool _isHidHideActive;
+    private bool _isUsbIpDriverInstalled;
+    private bool _hasBundledDriver;
+    private string _driverStatus = "جارٍ فحص التعريف…";
 
     private bool _btnA;
     private bool _btnB;
@@ -86,12 +90,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         TestCommand = new AsyncRelayCommand(StartTestModeAsync);
         EnableHidHideCommand = new AsyncRelayCommand(EnableHidHideAsync);
         RestorePhysicalCommand = new AsyncRelayCommand(RestorePhysicalControllerAsync);
+        InstallDriverCommand = new AsyncRelayCommand(InstallDriverAsync);
         SaveSettingsCommand = new RelayCommand(SaveSettings);
         OpenLogsCommand = new RelayCommand(OpenLogsFolder);
         OpenDataFolderCommand = new RelayCommand(OpenDataFolder);
 
         _bridge.StatusChanged += OnBridgeStatusChanged;
         SelectSection(0);
+        RefreshDriverStatus();
 
         _ = LoadAsync();
     }
@@ -106,6 +112,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand TestCommand { get; }
     public ICommand EnableHidHideCommand { get; }
     public ICommand RestorePhysicalCommand { get; }
+    public ICommand InstallDriverCommand { get; }
     public ICommand SaveSettingsCommand { get; }
     public ICommand OpenLogsCommand { get; }
     public ICommand OpenDataFolderCommand { get; }
@@ -133,6 +140,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 Raise(nameof(CanTest));
                 Raise(nameof(CanRefresh));
                 Raise(nameof(CanManageHidHide));
+                Raise(nameof(CanInstallDriver));
             }
         }
     }
@@ -149,8 +157,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 Raise(nameof(CanTest));
                 Raise(nameof(CanRefresh));
                 Raise(nameof(CanManageHidHide));
+                Raise(nameof(CanInstallDriver));
                 Raise(nameof(IsIdle));
                 Raise(nameof(RunStateText));
+                Raise(nameof(CanInstallDriver));
             }
         }
     }
@@ -283,6 +293,38 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorText);
+
+    public bool IsUsbIpDriverInstalled
+    {
+        get => _isUsbIpDriverInstalled;
+        private set
+        {
+            if (Set(ref _isUsbIpDriverInstalled, value))
+            {
+                Raise(nameof(CanInstallDriver));
+            }
+        }
+    }
+
+    public bool HasBundledDriver
+    {
+        get => _hasBundledDriver;
+        private set
+        {
+            if (Set(ref _hasBundledDriver, value))
+            {
+                Raise(nameof(CanInstallDriver));
+            }
+        }
+    }
+
+    public string DriverStatus
+    {
+        get => _driverStatus;
+        private set => Set(ref _driverStatus, value);
+    }
+
+    public bool CanInstallDriver => !IsBusy && !IsRunning && !IsUsbIpDriverInstalled && HasBundledDriver;
 
     // ---- Tester -------------------------------------------------------------
 
@@ -564,6 +606,23 @@ public sealed class MainViewModel : INotifyPropertyChanged
             backend = BackendFactory.Create(_settings);
             backend.StatusChanged += OnBackendStatusChanged;
             BackendName = backend.Name;
+
+            if (backend.Kind == VirtualPadBackendKind.Viiper && !_driverSetup.IsUsbIpDriverInstalled)
+            {
+                var proceed = MessageBox.Show(
+                    "تعريف usbip-win2 غير مثبت، لذلك غالبًا لن يظهر جهاز Xbox الافتراضي في الألعاب.\n\n" +
+                    "يمكنك تثبيته من «الإعدادات ← تعريف USB/IP» أو من مثبّت الحزمة.\n\nهل تريد المتابعة على أي حال؟",
+                    "التعريف غير مثبت",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (proceed != MessageBoxResult.Yes)
+                {
+                    await backend.DisposeAsync().ConfigureAwait(true);
+                    PrimaryStatus = "تم الإلغاء: ثبّت تعريف usbip-win2 أولًا.";
+                    return;
+                }
+            }
             BackendStatus = "جارٍ التوصيل…";
             PrimaryStatus = $"جارٍ توصيل {backend.Name}…";
 
@@ -735,6 +794,86 @@ public sealed class MainViewModel : INotifyPropertyChanged
         const double dot = 7;
         var offset = value / 32767.0 * radius;
         return isX ? center + offset - dot : center - offset - dot;
+    }
+
+    private void RefreshDriverStatus()
+    {
+        try
+        {
+            HasBundledDriver = _driverSetup.BundledUsbIpInstaller is not null;
+            IsUsbIpDriverInstalled = _driverSetup.IsUsbIpDriverInstalled;
+            DriverStatus = IsUsbIpDriverInstalled
+                ? "تعريف usbip-win2 مثبت وجاهز."
+                : HasBundledDriver
+                    ? "غير مثبت — المثبّت الرسمي الموقّع مضمّن مع التطبيق."
+                    : "غير مثبت — لم يُعثر على المثبّت المضمّن.";
+        }
+        catch (Exception ex)
+        {
+            DriverStatus = "تعذر فحص حالة التعريف.";
+            AppLog.Warn("Driver status check failed: " + ex.Message);
+        }
+
+        Raise(nameof(CanInstallDriver));
+    }
+
+    private async Task InstallDriverAsync()
+    {
+        if (!CanInstallDriver)
+        {
+            return;
+        }
+
+        var installer = _driverSetup.BundledUsbIpInstaller;
+        if (installer is null)
+        {
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            "سيتم تشغيل مثبّت تعريف usbip-win2 الرسمي الموقّع المضمّن مع التطبيق.\n\n" +
+            $"• الملف: {Path.GetFileName(installer)}\n" +
+            "• يتطلب صلاحيات مسؤول (UAC).\n" +
+            "• قد يطلب المثبّت إعادة تشغيل Windows.\n\nهل تريد المتابعة؟",
+            "تثبيت تعريف USB/IP",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        ErrorText = string.Empty;
+
+        try
+        {
+            var result = await _driverSetup.InstallUsbIpAsync().ConfigureAwait(true);
+            RefreshDriverStatus();
+
+            if (result.Cancelled)
+            {
+                ErrorText = "تم إلغاء تثبيت التعريف.";
+            }
+            else if (result.Installed)
+            {
+                PrimaryStatus = "تم تثبيت تعريف usbip-win2. أعد تشغيل Windows إن طلب المثبّت.";
+            }
+            else
+            {
+                ErrorText = $"انتهى المثبّت بالرمز {result.ExitCode} ولم يُكتشف التعريف. أعد التشغيل ثم أعد المحاولة.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorText = ex.Message;
+            AppLog.Error("Driver installation failed", ex);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private async Task RefreshHidHideAsync()

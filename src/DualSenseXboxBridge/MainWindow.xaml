@@ -265,11 +265,13 @@
                         <StackPanel>
                             <TextBlock Text="متطلبات التشغيل" Style="{StaticResource Caption}" />
                             <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0"
-                                       Text="VIIPER (موصى به): مشروع نشط يستخدم مشغّل usbip-win2 الموقّع من Microsoft ولا يحتاج تعريفاً مخصصاً لكل يد. حمّل viiper.exe وضعه بجانب التطبيق أو في PATH، وثبّت usbip-win2 مرة واحدة." />
+                                       Text="VIIPER: مضمّن مع الحزمة ويعمل فوق مشغّل USB/IP. لا حاجة لتنزيله يدوياً." />
                             <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
-                                       Text="ViGEmBus (بديل قديم): يعمل إن كان مثبتاً مسبقاً، لكن المشروع متقاعد ولم يعد يُطوَّر. لا يثبّت التطبيق أي تعريف تلقائياً." />
+                                       Text="usbip-win2: مثبّت التعريف الرسمي الموقّع مضمّن في الحزمة، ويُثبَّت من الإعدادات بموافقتك فقط." />
                             <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
-                                       Text="HidHide (اختياري): يمنع الإدخال المزدوج. لا يُفعّل إلا بعد موافقتك، ولا يخفي إلا يد DualSense المحددة." />
+                                       Text="ViGEmBus (بديل قديم): يعمل إن كان مثبتاً مسبقاً، لكن المشروع متقاعد ولا يُثبّته التطبيق." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                       Text="HidHide (اختياري): يمنع الإدخال المزدوج، ولا يخفي إلا يد DualSense المحددة." />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -608,6 +610,18 @@
                                 <CheckBox Content="عكس Y اليمنى" IsChecked="{Binding InvertRightY, Mode=TwoWay}" Margin="0,0,22,10" />
                                 <CheckBox Content="تبديل العصوين" IsChecked="{Binding SwapSticks, Mode=TwoWay}" Margin="0,0,22,10" />
                             </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="تعريف USB/IP (usbip-win2)" Style="{StaticResource H2}" />
+                            <TextBlock Text="{Binding DriverStatus}" Style="{StaticResource Value}" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,8,0,12"
+                                       Text="المثبّت الرسمي الموقّع مضمّن مع التطبيق، ولا يُشغَّل تلقائيًا. يحتاج موافقتك وصلاحيات مسؤول." />
+                            <Button Content="تثبيت تعريف usbip-win2" Command="{Binding InstallDriverCommand}"
+                                    IsEnabled="{Binding CanInstallDriver}" Style="{StaticResource BaseButton}"
+                                    HorizontalAlignment="Left" />
                         </StackPanel>
                     </Border>
 

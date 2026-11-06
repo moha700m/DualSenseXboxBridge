@@ -70,13 +70,29 @@ jobs:
           $size = (Get-Item $exe).Length / 1MB
           Write-Host ("Executable size: {0:N1} MB" -f $size)
 
-      - name: Build portable archive
+      - name: Fetch bundled third-party binaries
+        shell: pwsh
+        run: ./scripts/fetch-thirdparty.ps1 -Destination thirdparty
+
+      - name: Stage portable package
         shell: pwsh
         run: |
           Copy-Item docs/DRIVER_REQUIREMENTS.md artifacts/publish/README-DRIVER.md -Force
+          Copy-Item THIRD_PARTY_NOTICES.md artifacts/publish/THIRD_PARTY_NOTICES.md -Force
+
+          New-Item -ItemType Directory -Force -Path artifacts/portable | Out-Null
+          Copy-Item "artifacts/publish/*" artifacts/portable -Recurse -Force
+          Copy-Item "thirdparty" "artifacts/portable/thirdparty" -Recurse -Force
+
+          if (-not (Test-Path "artifacts/portable/thirdparty/viiper/viiper.exe")) { throw "Bundled viiper.exe is missing" }
+          if (-not (Test-Path "artifacts/portable/thirdparty/usbip-win2/USBip-0.9.8.1-x64.exe")) { throw "Bundled usbip-win2 installer is missing" }
+
+      - name: Build portable archive
+        shell: pwsh
+        run: |
           $zip = "artifacts/DualSenseXboxBridge-${{ steps.version.outputs.value }}-win-x64-portable.zip"
-          Compress-Archive -Path "artifacts/publish/*" -DestinationPath $zip -Force
-          Write-Host "Created $zip"
+          Compress-Archive -Path "artifacts/portable/*" -DestinationPath $zip -Force
+          Write-Host ("Portable archive: {0:N1} MB" -f ((Get-Item $zip).Length / 1MB))
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
@@ -89,6 +105,7 @@ jobs:
           & $iscc `
             "/DAppVersion=${{ steps.version.outputs.value }}" `
             "/DPublishDir=${{ github.workspace }}\artifacts\publish" `
+            "/DThirdPartyDir=${{ github.workspace }}\thirdparty" `
             "/DOutputDir=${{ github.workspace }}\artifacts" `
             "installer\DualSenseXboxBridge.iss"
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }

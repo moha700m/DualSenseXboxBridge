@@ -562,6 +562,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             _settings.PreferredDevicePath = descriptor.DevicePath;
             backend = BackendFactory.Create(_settings);
+            backend.StatusChanged += OnBackendStatusChanged;
             BackendName = backend.Name;
             BackendStatus = "جارٍ التوصيل…";
             PrimaryStatus = $"جارٍ توصيل {backend.Name}…";
@@ -909,6 +910,31 @@ public sealed class MainViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             AppLog.Warn("Could not open folder: " + ex.Message);
+        }
+    }
+
+    private void OnBackendStatusChanged(object? sender, BackendStatusEventArgs e)
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.CheckAccess())
+        {
+            ApplyBackendStatus(e);
+            return;
+        }
+
+        dispatcher.BeginInvoke(new Action(() => ApplyBackendStatus(e)));
+    }
+
+    private void ApplyBackendStatus(BackendStatusEventArgs e)
+    {
+        BackendStatus = e.Message;
+        IsBackendConnected = e.State == BackendConnectionState.Connected;
+
+        if (e.State == BackendConnectionState.Faulted)
+        {
+            ErrorText = e.Message;
+            PrimaryStatus = "توقف الإرسال إلى الجهاز الافتراضي. راجع حالة الـ Backend ثم أعد التشغيل.";
+            AppLog.Warn("Backend faulted: " + e.Message);
         }
     }
 

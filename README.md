@@ -119,7 +119,7 @@ installer/                       سكربت Inno Setup
 .github/workflows/build.yml      بناء + اختبارات + نشر + مثبّت + Release
 ```
 
-التفاصيل في [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+التفاصيل في [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). الإعدادات المتقدمة (إعادة تعيين الأزرار، اختيار جهاز USB، Backend) في [docs/ADVANCED_SETTINGS.md](docs/ADVANCED_SETTINGS.md).
 
 ---
 

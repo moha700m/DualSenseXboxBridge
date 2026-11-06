@@ -90,8 +90,9 @@ public sealed class ViiperBackend : IVirtualPadBackend
         }
         catch (Exception ex)
         {
-            SetStatus(BackendConnectionState.Faulted, "تعذر الاتصال بـ VIIPER: " + ex.Message, ex);
-            throw;
+            var message = $"تعذر الاتصال بخادم VIIPER على {_host}:{_port}. شغّل viiper.exe أو فعّل التشغيل التلقائي من الإعدادات. ({ex.Message})";
+            SetStatus(BackendConnectionState.Faulted, message, ex);
+            throw new InvalidOperationException(message, ex);
         }
     }
 

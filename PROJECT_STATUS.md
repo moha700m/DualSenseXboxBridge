@@ -1,29 +1,43 @@
-# Project status — 2026-11-06
+# حالة المشروع
 
-## User configuration
-- Connection: USB
-- Compatibility target: Xbox App, PC Game Pass, Microsoft Store and Win32 XInput titles
+آخر تحديث: 2026-11-06
 
-## Implemented in source alpha
-- WPF application shell.
-- DualSense USB HID discovery (Sony VID 054C; PIDs 0CE6 and 0DF2).
-- USB report ID 01 parser for 64-byte reports.
-- Mapping for face buttons, D-pad, bumpers, analog triggers, sticks, Start/Back and Guide.
-- HID reader loop.
-- Optional legacy ViGEm Xbox 360 output adapter.
-- Explicit test-only warning; no HidHide automation or automatic driver installation.
-- Windows GitHub Actions build/publish workflow.
+## ملخص صادق
 
-## Not yet verified
-- No Windows build was run in the authoring environment (dotnet SDK unavailable).
-- No physical DualSense was connected to this environment.
-- No XInput output test or Xbox App/Game Pass game test has been run.
-- No HidHide integration; physical and virtual pads may both be visible.
-- Bluetooth report parsing is not implemented.
+| البند | الحالة |
+| --- | --- |
+| بناء الحل بالكامل (Release) | ✅ ناجح، 0 تحذير |
+| اختبارات الوحدة | ✅ 88 ناجح من 88 |
+| بناء التطبيق win-x64 self-contained | ✅ يتم في GitHub Actions |
+| مثبّت Inno Setup | ✅ يُبنى في GitHub Actions |
+| قراءة DualSense على USB | ⚠️ منفّذة ومغطاة باختبارات Parser، لكن **غير مختبرة على يد حقيقية** |
+| إنشاء جهاز Xbox 360 افتراضي | ⚠️ منفّذ عبر VIIPER وViGEm، **غير مختبر على عتاد/مشغّل حقيقي** |
+| HidHide | ⚠️ منفّذ مع نسخة احتياطية واستعادة، **غير مختبر مع HidHide مثبت** |
+| Bluetooth | ❌ غير مدعوم في هذا الإصدار |
 
-## Blocking release work
-1. Run CI on Windows and fix compiler/package errors.
-2. Validate USB report bytes on the user's DualSense hardware.
-3. Replace retired ViGEm output backend with a maintained, signed virtual-pad backend.
-4. Implement per-device HidHide config with backup and guaranteed restore.
-5. Test `joy.cpl`, XInput tester, then actual Xbox App and Game Pass games.
+## ما تم إصلاحه في هذه الجولة
+
+1. سبب فشل البناء: `IOException` غير مستورد في `DualSenseInputReader` (WPF implicit usings لا تتضمن `System.IO`)،
+   مع استخدام خصائص HidSharp مهجورة.
+2. إعادة هيكلة كاملة: فصل النواة القابلة للاختبار عن تطبيق WPF.
+3. استبدال ViGEm كخيار أساسي بـ **VIIPER** (مشروع نشط، مشغّل usbip-win2 موقّع)، مع الإبقاء على ViGEm كخيار توافق.
+4. إضافة محرك HID مع إعادة اكتشاف تلقائية، مهلة قراءة، حالة محايدة عند الانقطاع، وإلغاء آمن.
+5. إضافة تكامل HidHide آمن مع نسخة احتياطية واستعادة ورفض العمل إذا تعذرت قراءة الحالة.
+6. واجهة WPF جديدة بالكامل (حالة، اختبار مباشر، إعدادات، حول) مع ثيم داكن.
+7. Workflow كامل: restore → build → test → publish → installer → release.
+
+## ما يحتاج تحققًا على جهاز حقيقي
+
+- قراءة جميع الأزرار والعصي والزنادات من يد فعلية.
+- ظهور الجهاز الافتراضي في `joy.cpl` وفي أداة XInput.
+- سلوك الفصل/إعادة التوصيل أثناء التشغيل.
+- عمل HidHide فعليًا ومنع الإدخال المزدوج.
+- عمل VIIPER مع usbip-win2 على Windows 10 و11.
+- تشغيل لعبة من Xbox App / PC Game Pass.
+
+## مخاطر معروفة
+
+- **VIIPER** يتطلب تثبيت مشغّل usbip-win2 منفصلًا؛ التطبيق لا يثبّته.
+- **ViGEmBus** متقاعد upstream؛ قد يتوقف عن العمل في تحديثات Windows مستقبلية.
+- تنسيق تقرير USB قد يختلف في إصدارات DualSense المستقبلية؛ الـ parser يتحقق من الطول و Report ID ويرفض ما لا يطابق.
+- قيم البطارية غير مؤكدة على العتاد.

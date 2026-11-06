@@ -1,0 +1,161 @@
+name: Build · Test · Package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build:
+    name: Build, test and package (win-x64)
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Compute version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "1.0.${{ github.run_number }}"
+          "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Building version $version"
+
+      - name: Restore
+        run: dotnet restore DualSenseXboxBridge.sln
+
+      - name: Build (Release)
+        run: dotnet build DualSenseXboxBridge.sln -c Release --no-restore -p:Version=${{ steps.version.outputs.value }} -p:ContinuousIntegrationBuild=true
+
+      - name: Run unit tests
+        run: >
+          dotnet test tests/DualSenseXboxBridge.Core.Tests/DualSenseXboxBridge.Core.Tests.csproj
+          -c Release --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory artifacts/test-results
+
+      - name: Publish self-contained app
+        run: >
+          dotnet publish src/DualSenseXboxBridge/DualSenseXboxBridge.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:DebugType=embedded
+          -p:Version=${{ steps.version.outputs.value }}
+          -o artifacts/publish
+
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          $exe = "artifacts/publish/DualSenseXboxBridge.exe"
+          if (-not (Test-Path $exe)) { throw "Publish did not produce $exe" }
+          $size = (Get-Item $exe).Length / 1MB
+          Write-Host ("Executable size: {0:N1} MB" -f $size)
+
+      - name: Build portable archive
+        shell: pwsh
+        run: |
+          Copy-Item docs/DRIVER_REQUIREMENTS.md artifacts/publish/README-DRIVER.md -Force
+          $zip = "artifacts/DualSenseXboxBridge-${{ steps.version.outputs.value }}-win-x64-portable.zip"
+          Compress-Archive -Path "artifacts/publish/*" -DestinationPath $zip -Force
+          Write-Host "Created $zip"
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          & $iscc `
+            "/DAppVersion=${{ steps.version.outputs.value }}" `
+            "/DPublishDir=${{ github.workspace }}\artifacts\publish" `
+            "/DOutputDir=${{ github.workspace }}\artifacts" `
+            "installer\DualSenseXboxBridge.iss"
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+
+      - name: Verify installer output
+        shell: pwsh
+        run: |
+          $setup = "artifacts/DualSenseXboxBridge-Setup-x64.exe"
+          if (-not (Test-Path $setup)) { throw "Installer was not produced" }
+          Write-Host ("Installer size: {0:N1} MB" -f ((Get-Item $setup).Length / 1MB))
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DualSenseXboxBridge-win-x64
+          if-no-files-found: error
+          path: |
+            artifacts/*.zip
+            artifacts/*.exe
+            artifacts/test-results/*.trx
+
+      - name: Build summary
+        shell: pwsh
+        run: |
+          $summary = @"
+          ### DualSense Xbox Bridge ${{ steps.version.outputs.value }}
+
+          | Step | Result |
+          | --- | --- |
+          | Restore / Build (Release) | passed |
+          | Unit tests | passed |
+          | Self-contained win-x64 publish | passed |
+          | Portable archive | passed |
+          | Inno Setup installer | passed |
+
+          Hardware validation (a real DualSense on USB) is **not** part of this run and must be performed manually.
+          "@
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: DualSenseXboxBridge-win-x64
+          path: dist
+
+      - name: List release files
+        run: ls -lh dist
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: DualSense Xbox Bridge v${{ needs.build.outputs.version }}
+          body_path: docs/RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.zip
+            dist/*.exe

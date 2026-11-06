@@ -1,11 +1,21 @@
 # DualSense Xbox Bridge
 
+![Build](https://github.com/moha700m/DualSenseXboxBridge/actions/workflows/build.yml/badge.svg)
+
 تحويل يد **Sony DualSense** الموصولة عبر **USB** إلى **جهاز Xbox 360 افتراضي** متوافق مع **XInput**،
 حتى تتعرف عليها ألعاب Windows وتطبيقات Xbox App و PC Game Pass التي لا تدعم DualSense مباشرة.
 
-> **الحالة بصراحة:** كل ما في هذا المستودع مبني ومُختبر آليًا (بناء + 88 اختبار وحدة + حزمة تثبيت)،
+> **الحالة بصراحة:** كل ما في هذا المستودع مبني ومُختبر آليًا (بناء + 92 اختبار وحدة + حزمة تثبيت)،
 > لكن **لم يُختبر على يد DualSense حقيقية** في بيئة إعداد هذا الإصدار لعدم توفر الجهاز.
 > راجع [PROJECT_STATUS.md](PROJECT_STATUS.md) و[docs/TESTING.md](docs/TESTING.md) قبل الاعتماد عليه في اللعب اليومي.
+
+
+## التنزيل
+
+أحدث إصدار: https://github.com/moha700m/DualSenseXboxBridge/releases/latest
+
+- `DualSenseXboxBridge-Setup-x64.exe` — مثبّت per-user (موصى به).
+- `DualSenseXboxBridge-...-portable.zip` — نسخة محمولة.
 
 ---
 
@@ -125,7 +135,7 @@ installer/                       سكربت Inno Setup
 
 ## الاختبارات
 
-- **88 اختبار وحدة** تغطي: تحليل تقارير USB، رفض التقارير القصيرة وBluetooth، خريطة الأزرار، D-Pad،
+- **92 اختبار وحدة** تغطي: تحليل تقارير USB، رفض التقارير القصيرة وBluetooth، خريطة الأزرار، D-Pad،
   تحويل المحاور والزنادات، المنطقة الميتة، إعادة التعيين، فلترة الأجهزة، بروتوكول VIIPER، مسارات HidHide،
   وحفظ الإعدادات.
 - **اختبارات يدوية مطلوبة** على جهاز حقيقي — القائمة الكاملة في [docs/TESTING.md](docs/TESTING.md).

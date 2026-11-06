@@ -4,7 +4,7 @@
 
 `dotnet test tests/DualSenseXboxBridge.Core.Tests/DualSenseXboxBridge.Core.Tests.csproj -c Release`
 
-88 اختبارًا تغطي:
+92 اختبارًا تغطي:
 
 | المجموعة | ما تُثبته |
 | --- | --- |
@@ -12,6 +12,7 @@
 | `MappingTests` | خريطة الأزرار، D-Pad، عكس Y، المنطقة الميتة وإعادة القياس، الزنادات، remap، تبديل العصي |
 | `DeviceFilterTests` | قبول DualSense/Edge، رفض DualShock 4، الأجهزة غير Sony، Bluetooth، واجهات التقارير القصيرة |
 | `ViiperProtocolTests` | تخطيط 20 بايت little-endian، حزمة محايدة، تحقق الحجم، فك الـ feedback |
+| `ViiperApiTests` | إرسال طلبات منتهية بـ nullbyte وتفسير الردود وأخطاء RFC 7807 عبر خادم TCP وهمي |
 | `HidHideTests` | تحويل مسار الجهاز، مقارنة القوائم بحساسية حالة الأحرف |
 | `SettingsTests` | حفظ/تحميل، ملف تالف، القيم الافتراضية، التطبيع |
 

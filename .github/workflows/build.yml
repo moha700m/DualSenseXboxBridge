@@ -74,6 +74,18 @@ jobs:
         shell: pwsh
         run: ./scripts/fetch-thirdparty.ps1 -Destination thirdparty
 
+      - name: Verify bundled inputs
+        shell: pwsh
+        run: |
+          $required = @(
+            "thirdparty/viiper/viiper.exe",
+            "thirdparty/usbip-win2/USBip-0.9.8.1-x64.exe"
+          )
+          foreach ($file in $required) {
+            if (-not (Test-Path $file)) { throw "Missing bundled input: $file" }
+            Write-Host ("{0}: {1:N1} MB" -f $file, ((Get-Item $file).Length / 1MB))
+          }
+
       - name: Stage portable package
         shell: pwsh
         run: |
@@ -115,7 +127,11 @@ jobs:
         run: |
           $setup = "artifacts/DualSenseXboxBridge-Setup-x64.exe"
           if (-not (Test-Path $setup)) { throw "Installer was not produced" }
-          Write-Host ("Installer size: {0:N1} MB" -f ((Get-Item $setup).Length / 1MB))
+          $sizeMb = (Get-Item $setup).Length / 1MB
+          Write-Host ("Installer size: {0:N1} MB" -f $sizeMb)
+          if ($sizeMb -lt 80) {
+            throw "Installer is unexpectedly small ($sizeMb MB): the bundled VIIPER/usbip-win2 files are probably missing."
+          }
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

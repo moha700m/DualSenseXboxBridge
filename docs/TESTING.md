@@ -4,7 +4,7 @@
 
 `dotnet test tests/DualSenseXboxBridge.Core.Tests/DualSenseXboxBridge.Core.Tests.csproj -c Release`
 
-92 اختبارًا تغطي:
+96 اختبارًا آليًا (منها اختبار WPF واحد يعمل على Windows فقط) تغطي:
 
 | المجموعة | ما تُثبته |
 | --- | --- |
@@ -13,6 +13,8 @@
 | `DeviceFilterTests` | قبول DualSense/Edge، رفض DualShock 4، الأجهزة غير Sony، Bluetooth، واجهات التقارير القصيرة |
 | `ViiperProtocolTests` | تخطيط 20 بايت little-endian، حزمة محايدة، تحقق الحجم، فك الـ feedback |
 | `ViiperApiTests` | إرسال طلبات منتهية بـ nullbyte وتفسير الردود وأخطاء RFC 7807 عبر خادم TCP وهمي |
+| `XamlBindingAuditTests` | كل ربط على خاصية افتراضية ثنائية الاتجاه (`Value`, `IsChecked`, `Text`) يحدد `Mode` صراحةً؛ وربط التيليمتري `Mode=OneWay` |
+| `BindingSmokeTests` (Windows فقط) | تحميل `MainWindow` فعليًا على خيط STA وفشل الاختبار عند أي خطأ ربط من WPF |
 | `HidHideTests` | تحويل مسار الجهاز، مقارنة القوائم بحساسية حالة الأحرف |
 | `SettingsTests` | حفظ/تحميل، ملف تالف، القيم الافتراضية، التطبيع |
 

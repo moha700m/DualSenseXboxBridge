@@ -543,7 +543,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding TriggerLtText}" FontSize="12"
                                                    Foreground="{StaticResource TextSecondaryBrush}" />
                                     </Grid>
-                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerLt}" Margin="0,6,0,0" />
+                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerLt, Mode=OneWay}" Margin="0,6,0,0" />
 
                                     <Grid Margin="0,14,0,0">
                                         <Grid.ColumnDefinitions>
@@ -554,7 +554,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding TriggerRtText}" FontSize="12"
                                                    Foreground="{StaticResource TextSecondaryBrush}" />
                                     </Grid>
-                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerRt}" Margin="0,6,0,0" />
+                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerRt, Mode=OneWay}" Margin="0,6,0,0" />
                                 </StackPanel>
                             </Grid>
                         </StackPanel>

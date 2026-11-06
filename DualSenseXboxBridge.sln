@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9D56E026
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DualSenseXboxBridge.Core.Tests", "tests\DualSenseXboxBridge.Core.Tests\DualSenseXboxBridge.Core.Tests.csproj", "{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DualSenseXboxBridge.Ui.Tests", "tests\DualSenseXboxBridge.Ui.Tests\DualSenseXboxBridge.Ui.Tests.csproj", "{B9B9FD58-6173-4048-A6D5-BA32CDC58355}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,10 +36,15 @@ Global
 		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9B9FD58-6173-4048-A6D5-BA32CDC58355}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9B9FD58-6173-4048-A6D5-BA32CDC58355}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9B9FD58-6173-4048-A6D5-BA32CDC58355}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9B9FD58-6173-4048-A6D5-BA32CDC58355}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{305512C6-ED11-4AC5-A057-961DC0818548} = {01C2C09C-11E5-4509-B545-66FF4525E418}
 		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7} = {01C2C09C-11E5-4509-B545-66FF4525E418}
 		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F} = {9D56E026-E489-42B0-BD5D-A1F206BE6331}
+		{B9B9FD58-6173-4048-A6D5-BA32CDC58355} = {9D56E026-E489-42B0-BD5D-A1F206BE6331}
 	EndGlobalSection
 EndGlobal

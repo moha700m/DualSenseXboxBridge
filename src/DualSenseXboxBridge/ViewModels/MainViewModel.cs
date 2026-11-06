@@ -131,6 +131,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 Raise(nameof(CanStart));
                 Raise(nameof(CanStop));
                 Raise(nameof(CanTest));
+                Raise(nameof(CanRefresh));
+                Raise(nameof(CanManageHidHide));
             }
         }
     }
@@ -145,6 +147,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 Raise(nameof(CanStart));
                 Raise(nameof(CanStop));
                 Raise(nameof(CanTest));
+                Raise(nameof(CanRefresh));
+                Raise(nameof(CanManageHidHide));
                 Raise(nameof(IsIdle));
                 Raise(nameof(RunStateText));
             }
@@ -175,6 +179,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool CanStart => !IsRunning && !IsBusy;
     public bool CanStop => IsRunning && !IsBusy;
     public bool CanTest => !IsRunning && !IsBusy;
+
+    public bool CanRefresh => !IsBusy;
+
+    public bool CanManageHidHide => !IsBusy;
 
     public bool IsControllerConnected
     {

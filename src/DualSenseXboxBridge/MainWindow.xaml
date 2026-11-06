@@ -126,7 +126,7 @@
 
                     <Button Content="تحديث الأجهزة"
                             Command="{Binding RefreshCommand}"
-                            IsEnabled="{Binding CanStart}"
+                            IsEnabled="{Binding CanRefresh}"
                             Style="{StaticResource BaseButton}"
                             Margin="10,0,0,0" />
                 </StackPanel>
@@ -245,10 +245,10 @@
                                         IsEnabled="{Binding CanTest}" Style="{StaticResource BaseButton}"
                                         MinWidth="130" Margin="0,0,10,10" />
                                 <Button Content="تفعيل HidHide" Command="{Binding EnableHidHideCommand}"
-                                        IsEnabled="{Binding CanTest}" Style="{StaticResource BaseButton}"
+                                        IsEnabled="{Binding CanManageHidHide}" Style="{StaticResource BaseButton}"
                                         MinWidth="140" Margin="0,0,10,10" />
                                 <Button Content="استعادة اليد الفعلية" Command="{Binding RestorePhysicalCommand}"
-                                        IsEnabled="{Binding CanTest}" Style="{StaticResource DangerButton}"
+                                        IsEnabled="{Binding CanManageHidHide}" Style="{StaticResource DangerButton}"
                                         MinWidth="160" Margin="0,0,10,10" />
                             </WrapPanel>
 

@@ -1,6 +1,21 @@
-**/bin/
-**/obj/
-.vs/
+# Build output
+bin/
+obj/
+artifacts/
+publish/
 *.user
 *.suo
-artifacts/
+.vs/
+
+# Test output
+TestResults/
+*.trx
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local tooling
+.dotnet/

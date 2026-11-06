@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Company>DualSense Xbox Bridge</Company>
+    <Product>DualSense Xbox Bridge</Product>
+    <Version>1.0.0</Version>
+    <RepositoryUrl>https://github.com/moha700m/DualSenseXboxBridge</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+</Project>

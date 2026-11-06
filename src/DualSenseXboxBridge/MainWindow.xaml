@@ -1,62 +1,706 @@
 <Window x:Class="DualSenseXboxBridge.MainWindow"
- xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
- Title="DualSense Xbox Bridge" Height="650" Width="980"
- MinHeight="600" MinWidth="900" Background="{StaticResource Bg}"
- Foreground="White" WindowStartupLocation="CenterScreen">
- <Grid Margin="26">
-  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <DockPanel Grid.Row="0" Margin="0,0,0,22">
-   <StackPanel>
-    <TextBlock Text="DUALSENSE  →  XBOX" FontSize="25" FontWeight="Bold"/>
-    <TextBlock Text="Controller bridge • Windows 10/11" Foreground="{StaticResource Muted}" Margin="0,5,0,0"/>
-   </StackPanel>
-   <Border DockPanel.Dock="Right" Background="#253447" CornerRadius="8" Padding="14,8" VerticalAlignment="Center">
-    <TextBlock Text="ALPHA • SAFE MODE" Foreground="#FFD479" FontWeight="SemiBold"/>
-   </Border>
-  </DockPanel>
-  <Border Grid.Row="1" Background="{StaticResource Panel}" CornerRadius="12" Padding="18" Margin="0,0,0,16">
-   <Grid>
-    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <StackPanel>
-     <TextBlock Text="PHYSICAL CONTROLLER" Foreground="{StaticResource Muted}" FontSize="12" FontWeight="Bold"/>
-     <TextBlock x:Name="DeviceText" Text="Searching for DualSense…" FontSize="19" FontWeight="SemiBold" Margin="0,7,0,0"/>
-     <TextBlock x:Name="DeviceDetail" Text="USB / Bluetooth discovery" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/>
-    </StackPanel>
-    <Button Grid.Column="1" Content="Refresh devices" Padding="18,10" Click="Refresh_Click" VerticalAlignment="Center"/>
-   </Grid>
-  </Border>
-  <Grid Grid.Row="2">
-   <Grid.ColumnDefinitions><ColumnDefinition Width="1.2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-   <Border Background="{StaticResource Panel}" CornerRadius="12" Padding="20" Margin="0,0,12,0">
-    <StackPanel>
-     <TextBlock Text="VIRTUAL XBOX CONTROLLER" Foreground="{StaticResource Muted}" FontWeight="Bold" FontSize="12"/>
-     <TextBlock Text="Xbox 360 (XInput)" FontSize="22" FontWeight="SemiBold" Margin="0,9,0,4"/>
-     <TextBlock x:Name="BackendText" Text="Backend: not connected" Foreground="{StaticResource Muted}"/>
-     <Separator Margin="0,20"/>
-     <TextBlock Text="Conversion status" FontWeight="SemiBold"/>
-     <TextBlock x:Name="StatusText" Text="Disabled — parser requires hardware verification." TextWrapping="Wrap" Foreground="#FFD479" Margin="0,8,0,16"/>
-     <Button x:Name="StartButton" Content="Enable Xbox Mode" Padding="15,13" IsEnabled="True" Click="Start_Click"/>
-     <Button Content="Restore / Disconnect" Padding="15,11" Margin="0,9,0,0" Click="Stop_Click"/>
-     <TextBlock Text="Test in joy.cpl only. Do not use for gameplay until the driver backend and HidHide are verified." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12" Margin="0,16,0,0"/>
-    </StackPanel>
-   </Border>
-   <Border Grid.Column="1" Background="{StaticResource Panel}" CornerRadius="12" Padding="20" Margin="12,0,0,0">
-    <StackPanel>
-     <TextBlock Text="SYSTEM CHECKS" Foreground="{StaticResource Muted}" FontWeight="Bold" FontSize="12"/>
-     <TextBlock Text="Windows" Margin="0,18,0,3" FontWeight="SemiBold"/>
-     <TextBlock x:Name="WindowsText" Foreground="{StaticResource Muted}"/>
-     <TextBlock Text="HID device discovery" Margin="0,16,0,3" FontWeight="SemiBold"/>
-     <TextBlock x:Name="HidText" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
-     <TextBlock Text="HidHide" Margin="0,16,0,3" FontWeight="SemiBold"/>
-     <TextBlock Text="Not modified by this prototype" Foreground="{StaticResource Muted}"/>
-     <TextBlock Text="Driver installation" Margin="0,16,0,3" FontWeight="SemiBold"/>
-     <TextBlock Text="Manual only — no driver changes" Foreground="{StaticResource Muted}"/>
-     <TextBlock Text="Safety" Margin="0,16,0,3" FontWeight="SemiBold"/>
-     <TextBlock Text="No device hiding, registry edits, or background driver installation." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
-    </StackPanel>
-   </Border>
-  </Grid>
-  <TextBlock Grid.Row="3" Text="DualSense Xbox Bridge • Source prototype • Not yet validated with a physical controller" Foreground="{StaticResource Muted}" FontSize="11" Margin="0,18,0,0"/>
- </Grid>
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DualSense Xbox Bridge"
+        Height="760" Width="1140"
+        MinHeight="640" MinWidth="980"
+        Background="{StaticResource BgBrush}"
+        WindowStartupLocation="CenterScreen"
+        TextOptions.TextFormattingMode="Display"
+        FontFamily="Segoe UI">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="236" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Border Grid.Column="0"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,1,0">
+            <Grid Margin="14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Horizontal" Margin="6,12,0,26">
+                    <Border Width="38" Height="38" CornerRadius="10" Background="{StaticResource AccentBrush}">
+                        <TextBlock Text="DS" Foreground="White" FontWeight="Bold" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="DualSense" FontWeight="SemiBold" FontSize="14"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="Xbox Bridge" FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding NavItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding Command}"
+                                    Padding="14,10"
+                                    Margin="0,0,0,4"
+                                    HorizontalContentAlignment="Left"
+                                    Cursor="Hand">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                                                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <TextBlock Text="{Binding Title}" FontSize="13" />
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel Grid.Row="2" Margin="6,0,0,6">
+                    <TextBlock Text="الإصدار" Style="{StaticResource Caption}" />
+                    <TextBlock Text="{Binding VersionText}" FontSize="12"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,2,0,0" />
+                    <TextBlock Text="Windows 10 / 11 • x64" FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,10,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Column="1" Margin="26,20,26,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="DualSense Xbox Bridge" Style="{StaticResource H1}" />
+                    <TextBlock Text="تحويل يد DualSense إلى جهاز Xbox 360 افتراضي متوافق مع XInput"
+                               Style="{StaticResource Body}" Margin="0,4,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border CornerRadius="20" Padding="12,6" Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource TextSecondaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding RunStateText}" Margin="8,0,0,0" FontSize="12" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Content="تحديث الأجهزة"
+                            Command="{Binding RefreshCommand}"
+                            IsEnabled="{Binding CanStart}"
+                            Style="{StaticResource BaseButton}"
+                            Margin="10,0,0,0" />
+                </StackPanel>
+            </Grid>
+
+            <!-- ================= STATUS ================= -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,9,0">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="يد التحكم" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                    <Border HorizontalAlignment="Right" CornerRadius="20" Padding="10,4">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{StaticResource SurfaceAltBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsControllerConnected}" Value="True">
+                                                        <Setter Property="Background" Value="#123524" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding ControllerBadgeText}" FontSize="11" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsControllerConnected}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Text="{Binding ControllerTitle}" FontSize="17" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,14,0,0" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding ControllerDetail}" Style="{StaticResource Body}" Margin="0,6,0,0" />
+
+                                <Grid Margin="0,18,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="البطارية (تقريبي)" Style="{StaticResource Caption}" />
+                                        <TextBlock Text="{Binding BatteryText}" Style="{StaticResource Value}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="معدل القراءة" Style="{StaticResource Caption}" />
+                                        <TextBlock Text="{Binding RateText}" Style="{StaticResource Value}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Text="معرّف الجهاز" Style="{StaticResource Caption}" Margin="0,18,0,0" />
+                                <TextBlock Text="{Binding DeviceLabel}" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="9,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="جهاز الإخراج الافتراضي" Style="{StaticResource Caption}" />
+                                <TextBlock Text="{Binding BackendName}" FontSize="17" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,14,0,0" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding BackendStatus}" Style="{StaticResource Body}" Margin="0,6,0,0" />
+
+                                <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,18,0,14" />
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="{StaticResource WarningBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsBackendConnected}" Value="True">
+                                                        <Setter Property="Fill" Value="{StaticResource SuccessBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Text="XInput / Virtual Pad" Margin="8,0,0,0" FontSize="13"
+                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                </StackPanel>
+
+                                <TextBlock Text="HidHide" Style="{StaticResource Caption}" Margin="0,16,0,0" />
+                                <TextBlock Text="{Binding HidHideStatus}" Style="{StaticResource Body}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                        <StackPanel>
+                            <TextBlock Text="التحكم" Style="{StaticResource Caption}" />
+                            <TextBlock Text="{Binding PrimaryStatus}" Style="{StaticResource Value}" Margin="0,10,0,14" />
+
+                            <WrapPanel>
+                                <Button Content="تفعيل وضع Xbox" Command="{Binding StartCommand}"
+                                        IsEnabled="{Binding CanStart}" Style="{StaticResource PrimaryButton}"
+                                        MinWidth="170" Margin="0,0,10,10" />
+                                <Button Content="إيقاف" Command="{Binding StopCommand}"
+                                        IsEnabled="{Binding CanStop}" Style="{StaticResource BaseButton}"
+                                        MinWidth="110" Margin="0,0,10,10" />
+                                <Button Content="اختبار اليد" Command="{Binding TestCommand}"
+                                        IsEnabled="{Binding CanTest}" Style="{StaticResource BaseButton}"
+                                        MinWidth="130" Margin="0,0,10,10" />
+                                <Button Content="تفعيل HidHide" Command="{Binding EnableHidHideCommand}"
+                                        IsEnabled="{Binding CanTest}" Style="{StaticResource BaseButton}"
+                                        MinWidth="140" Margin="0,0,10,10" />
+                                <Button Content="استعادة اليد الفعلية" Command="{Binding RestorePhysicalCommand}"
+                                        IsEnabled="{Binding CanTest}" Style="{StaticResource DangerButton}"
+                                        MinWidth="160" Margin="0,0,10,10" />
+                            </WrapPanel>
+
+                            <Border Background="#2A1216" BorderBrush="#4A1D24" BorderThickness="1" CornerRadius="8"
+                                    Padding="12" Margin="0,4,0,0"
+                                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap" FontSize="12"
+                                           Foreground="#FCA5A5" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,18,0,0">
+                        <StackPanel>
+                            <TextBlock Text="متطلبات التشغيل" Style="{StaticResource Caption}" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0"
+                                       Text="VIIPER (موصى به): مشروع نشط يستخدم مشغّل usbip-win2 الموقّع من Microsoft ولا يحتاج تعريفاً مخصصاً لكل يد. حمّل viiper.exe وضعه بجانب التطبيق أو في PATH، وثبّت usbip-win2 مرة واحدة." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                       Text="ViGEmBus (بديل قديم): يعمل إن كان مثبتاً مسبقاً، لكن المشروع متقاعد ولم يعد يُطوَّر. لا يثبّت التطبيق أي تعريف تلقائياً." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0"
+                                       Text="HidHide (اختياري): يمنع الإدخال المزدوج. لا يُفعّل إلا بعد موافقتك، ولا يخفي إلا يد DualSense المحددة." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ================= TESTER ================= -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding ShowTester, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="اختبار مباشر" Style="{StaticResource H2}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="القيم أدناه مرتبطة بقراءة USB الفعلية. شغّل «اختبار اليد» أو «وضع Xbox» لبدء التحديث." />
+
+                            <Grid Margin="0,16,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Face buttons -->
+                                <StackPanel>
+                                    <TextBlock Text="الأزرار" Style="{StaticResource Caption}" Margin="0,0,0,10" />
+                                    <UniformGrid Columns="4">
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnLb}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="LB" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnRb}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="RB" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnBack}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="Back" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnStart}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="Start" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnX}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="X" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnY}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="Y" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnLs}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="LS" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnRs}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="RS" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnA}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="A" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnB}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="B" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border>
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding BtnGuide}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="Guide" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                    </UniformGrid>
+
+                                    <TextBlock Text="D-Pad" Style="{StaticResource Caption}" Margin="0,18,0,8" />
+                                    <Grid Width="150" Height="150" HorizontalAlignment="Left">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Row="0" Grid.Column="1">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DpadUp}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="▲" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border Grid.Row="1" Grid.Column="0">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DpadLeft}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="◀" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border Grid.Row="1" Grid.Column="2">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DpadRight}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="▶" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                        <Border Grid.Row="2" Grid.Column="1">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource KeyCap}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding DpadDown}" Value="True">
+                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="▼" HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Sticks and triggers -->
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="المحاور" Style="{StaticResource Caption}" Margin="0,0,0,10" />
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel>
+                                            <Canvas Width="110" Height="110">
+                                                <Ellipse Canvas.Left="10" Canvas.Top="10" Width="90" Height="90"
+                                                         Stroke="{StaticResource BorderBrush}" StrokeThickness="1" />
+                                                <Line X1="55" Y1="16" X2="55" Y2="94" Stroke="#1C2836" StrokeThickness="1" />
+                                                <Line X1="16" Y1="55" X2="94" Y2="55" Stroke="#1C2836" StrokeThickness="1" />
+                                                <Ellipse Width="14" Height="14" Fill="{StaticResource AccentBrush}"
+                                                         Canvas.Left="{Binding LeftDotX}" Canvas.Top="{Binding LeftDotY}" />
+                                            </Canvas>
+                                            <TextBlock Text="العصا اليسرى" Style="{StaticResource Caption}" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{Binding LeftStickText}" FontSize="11" HorizontalAlignment="Center"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" Margin="18,0,0,0">
+                                            <Canvas Width="110" Height="110">
+                                                <Ellipse Canvas.Left="10" Canvas.Top="10" Width="90" Height="90"
+                                                         Stroke="{StaticResource BorderBrush}" StrokeThickness="1" />
+                                                <Line X1="55" Y1="16" X2="55" Y2="94" Stroke="#1C2836" StrokeThickness="1" />
+                                                <Line X1="16" Y1="55" X2="94" Y2="55" Stroke="#1C2836" StrokeThickness="1" />
+                                                <Ellipse Width="14" Height="14" Fill="{StaticResource AccentBrush}"
+                                                         Canvas.Left="{Binding RightDotX}" Canvas.Top="{Binding RightDotY}" />
+                                            </Canvas>
+                                            <TextBlock Text="العصا اليمنى" Style="{StaticResource Caption}" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{Binding RightStickText}" FontSize="11" HorizontalAlignment="Center"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="الزنادات" Style="{StaticResource Caption}" Margin="0,22,0,10" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="LT" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding TriggerLtText}" FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </Grid>
+                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerLt}" Margin="0,6,0,0" />
+
+                                    <Grid Margin="0,14,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="RT" Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding TriggerRtText}" FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </Grid>
+                                    <ProgressBar Style="{StaticResource Meter}" Maximum="255" Value="{Binding TriggerRt}" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ================= SETTINGS ================= -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding ShowSettings, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="تحويل الإدخال" Style="{StaticResource H2}" />
+
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="60" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="المنطقة الميتة للعصا" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding StickDeadzoneLabel}" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" />
+                            </Grid>
+                            <Slider Minimum="0" Maximum="90" Value="{Binding StickDeadzonePercent, Mode=TwoWay}" />
+
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="60" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="المنطقة الميتة للزناد" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding TriggerDeadzoneLabel}" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" />
+                            </Grid>
+                            <Slider Minimum="0" Maximum="50" Value="{Binding TriggerDeadzonePercent, Mode=TwoWay}" />
+
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="60" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="حساسية العصا" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding SensitivityLabel}" HorizontalAlignment="Right"
+                                           Foreground="{StaticResource TextPrimaryBrush}" FontSize="12" />
+                            </Grid>
+                            <Slider Minimum="50" Maximum="300" Value="{Binding SensitivityPercent, Mode=TwoWay}" />
+
+                            <WrapPanel Margin="0,16,0,0">
+                                <CheckBox Content="عكس X اليسرى" IsChecked="{Binding InvertLeftX, Mode=TwoWay}" Margin="0,0,22,10" />
+                                <CheckBox Content="عكس Y اليسرى" IsChecked="{Binding InvertLeftY, Mode=TwoWay}" Margin="0,0,22,10" />
+                                <CheckBox Content="عكس X اليمنى" IsChecked="{Binding InvertRightX, Mode=TwoWay}" Margin="0,0,22,10" />
+                                <CheckBox Content="عكس Y اليمنى" IsChecked="{Binding InvertRightY, Mode=TwoWay}" Margin="0,0,22,10" />
+                                <CheckBox Content="تبديل العصوين" IsChecked="{Binding SwapSticks, Mode=TwoWay}" Margin="0,0,22,10" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="HidHide — منع الإدخال المزدوج" Style="{StaticResource H2}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="لا يخفي التطبيق أي جهاز إلا بعد موافقتك، ويحفظ نسخة احتياطية قبل أي تغيير ويستعيدها عند الإيقاف." />
+                            <TextBlock Text="{Binding HidHideStatus}" Style="{StaticResource Value}" Margin="0,10,0,12" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="تفعيل HidHide" Command="{Binding EnableHidHideCommand}"
+                                        Style="{StaticResource BaseButton}" Margin="0,0,10,0" />
+                                <Button Content="استعادة اليد الفعلية" Command="{Binding RestorePhysicalCommand}"
+                                        Style="{StaticResource DangerButton}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="بدء التشغيل" Style="{StaticResource H2}" />
+                            <CheckBox Content="تشغيل التطبيق مع Windows" IsChecked="{Binding AutoStart, Mode=TwoWay}" Margin="0,0,0,10" />
+                            <CheckBox Content="بدء التطبيق مصغّرًا" IsChecked="{Binding StartMinimized, Mode=TwoWay}" Margin="0,0,0,10" />
+                            <CheckBox Content="بدء الربط تلقائيًا عند التشغيل" IsChecked="{Binding StartBridgeOnLaunch, Mode=TwoWay}" Margin="0,0,0,4" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="خادم VIIPER" Style="{StaticResource H2}" />
+                            <TextBlock Text="العنوان والمنفذ" Style="{StaticResource Caption}" Margin="0,0,0,6" />
+                            <TextBox Text="{Binding ViiperEndpoint, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Padding="10,8" Background="{StaticResource SurfaceAltBrush}"
+                                     BorderBrush="{StaticResource BorderBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                                     CaretBrush="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="مسار viiper.exe (اختياري)" Style="{StaticResource Caption}" Margin="0,12,0,6" />
+                            <TextBox Text="{Binding ViiperServerPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                     Padding="10,8" Background="{StaticResource SurfaceAltBrush}"
+                                     BorderBrush="{StaticResource BorderBrush}" Foreground="{StaticResource TextPrimaryBrush}"
+                                     CaretBrush="{StaticResource TextPrimaryBrush}" />
+                            <CheckBox Content="تشغيل خادم VIIPER تلقائيًا من المسار أعلاه" IsChecked="{Binding ViiperAutoLaunch, Mode=TwoWay}" Margin="0,12,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                        <Button Content="حفظ الإعدادات" Command="{Binding SaveSettingsCommand}"
+                                Style="{StaticResource PrimaryButton}" MinWidth="160" />
+                        <Button Content="فتح مجلد السجلات" Command="{Binding OpenLogsCommand}"
+                                Style="{StaticResource BaseButton}" Margin="10,0,0,0" />
+                        <Button Content="فتح مجلد البيانات" Command="{Binding OpenDataFolderCommand}"
+                                Style="{StaticResource BaseButton}" Margin="10,0,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding SettingsSavedText}" Style="{StaticResource Body}" Margin="0,10,0,20" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ================= ABOUT ================= -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding ShowAbout, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="حول التطبيق" Style="{StaticResource H2}" />
+                            <TextBlock Style="{StaticResource Body}"
+                                       Text="DualSense Xbox Bridge يقرأ تقارير USB من يد DualSense ويحوّلها إلى جهاز Xbox 360 افتراضي متوافق مع XInput. التطبيق لا يثبّت تعريفات ولا يعدّل إعدادات النظام من تلقاء نفسه." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,10,0,0"
+                                       Text="Bluetooth غير مدعوم في هذا الإصدار. اليد الموصولة عبر USB فقط هي المدعومة." />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="قائمة اختبار قبل الاستخدام اليومي" Style="{StaticResource H2}" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,4,0,0" Text="1. وصّل اليد عبر USB." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="2. اضغط «تحديث الأجهزة» وتأكد من ظهور DualSense." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="3. شغّل «اختبار اليد» وتحقق من كل زر وعصا وزناد." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="4. شغّل «وضع Xbox» ثم افحص الجهاز في joy.cpl." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="5. فعّل HidHide بعد الموافقة لمنع الإدخال المزدوج." />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="6. افصل اليد وأعد توصيلها للتأكد من إعادة الاتصال." />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="روابط" Style="{StaticResource H2}" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,4,0,0" Text="VIIPER: github.com/Alia5/VIIPER" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="usbip-win2: github.com/vadimgrn/usbip-win2" />
+                            <TextBlock Style="{StaticResource Body}" Margin="0,6,0,0" Text="HidHide: github.com/nefarius/HidHide" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
 </Window>

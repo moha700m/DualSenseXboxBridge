@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{01C2C09C-11E5-4509-B545-66FF4525E418}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DualSenseXboxBridge.Core", "src\DualSenseXboxBridge.Core\DualSenseXboxBridge.Core.csproj", "{305512C6-ED11-4AC5-A057-961DC0818548}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DualSenseXboxBridge", "src\DualSenseXboxBridge\DualSenseXboxBridge.csproj", "{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9D56E026-E489-42B0-BD5D-A1F206BE6331}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DualSenseXboxBridge.Core.Tests", "tests\DualSenseXboxBridge.Core.Tests\DualSenseXboxBridge.Core.Tests.csproj", "{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{305512C6-ED11-4AC5-A057-961DC0818548}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{305512C6-ED11-4AC5-A057-961DC0818548}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{305512C6-ED11-4AC5-A057-961DC0818548}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{305512C6-ED11-4AC5-A057-961DC0818548}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{305512C6-ED11-4AC5-A057-961DC0818548} = {01C2C09C-11E5-4509-B545-66FF4525E418}
+		{E0FC4598-C5ED-438B-875D-4BF84B8CB0D7} = {01C2C09C-11E5-4509-B545-66FF4525E418}
+		{AB8BAF8A-7128-40AE-BA65-CABE1DFB9A9F} = {9D56E026-E489-42B0-BD5D-A1F206BE6331}
+	EndGlobalSection
+EndGlobal

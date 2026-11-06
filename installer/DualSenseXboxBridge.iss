@@ -50,7 +50,6 @@ Name: "startup"; Description: "Start DualSense Xbox Bridge with &Windows"; Group
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#PublishDir}\README-DRIVER.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\DualSense Xbox Bridge"; Filename: "{app}\DualSenseXboxBridge.exe"
@@ -65,9 +64,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\DualSenseXboxBridge.exe"; Description: "Launch DualSense Xbox Bridge"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\README-DRIVER.md"; Description: "Open the driver requirements guide"; Flags: shellexec nowait postinstall skipifsilent unchecked
 
-[UninstallDelete]
-; Only generated logs are removed. User settings in %LOCALAPPDATA%\DualSenseXboxBridge are kept on purpose.
-Type: filesandordirs; Name: "{app}\logs"
+; User settings in %LOCALAPPDATA%\DualSenseXboxBridge are intentionally kept on uninstall.
 
 [Code]
 procedure InitializeWizard();

@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
-using Microsoft.Win32;
 using DualSenseXboxBridge.Core.Diagnostics;
 using DualSenseXboxBridge.Core.HidHide;
 
@@ -16,8 +15,13 @@ public sealed record HidHideState(
 
 /// <summary>
 /// Safe, reversible HidHide integration through the official HidHideCLI.
-/// Every change is preceded by a backup and is limited to the DualSense device and this
-/// executable; no other HID device is touched and nothing is hidden without user consent.
+///
+/// Safety rules enforced here:
+///  * only the selected DualSense device instance and this executable are touched;
+///  * a backup of the previous configuration is taken *inside the same elevated batch* that
+///    applies the change, so it can never be built from a failed read;
+///  * nothing is hidden without an explicit user confirmation in the UI;
+///  * restore only undoes what this app added, then re-applies the backup.
 /// </summary>
 public sealed class HidHideService
 {
@@ -45,6 +49,10 @@ public sealed class HidHideService
 
     public string? LastError { get; private set; }
 
+    /// <summary>
+    /// Reads the current configuration without elevation. Reading may be denied by the driver;
+    /// in that case the state is reported as unknown and the UI says so instead of guessing.
+    /// </summary>
     public async Task<HidHideState> GetStateAsync(CancellationToken cancellationToken = default)
     {
         if (!IsInstalled)
@@ -52,25 +60,25 @@ public sealed class HidHideService
             return new HidHideState(false, false, false, Array.Empty<string>(), Array.Empty<string>());
         }
 
-        // Reading the configuration normally needs elevation; the elevated path captures output
-        // through a temporary script so the backup is never built from an empty read.
-        var cloakedResult = await ReadAsync("--cloak-state", cancellationToken).ConfigureAwait(false);
-        var devicesResult = await ReadAsync("--dev-list", cancellationToken).ConfigureAwait(false);
-        var appsResult = await ReadAsync("--app-list", cancellationToken).ConfigureAwait(false);
+        var cloak = await RunDirectAsync("--cloak-state", cancellationToken).ConfigureAwait(false);
+        var devices = await RunDirectAsync("--dev-list", cancellationToken).ConfigureAwait(false);
+        var apps = await RunDirectAsync("--app-list", cancellationToken).ConfigureAwait(false);
 
-        var known = cloakedResult.Success && devicesResult.Success && appsResult.Success;
-        var cloaked = known &&
-                      cloakedResult.Output.Contains("on", StringComparison.OrdinalIgnoreCase) &&
-                      !cloakedResult.Output.Contains("off", StringComparison.OrdinalIgnoreCase);
+        var known = cloak.Success && devices.Success && apps.Success && !string.IsNullOrWhiteSpace(cloak.Output);
+        var cloaked = known && IsOn(cloak.Output);
 
         return new HidHideState(
             true,
             known,
             cloaked,
-            known ? ParseList(devicesResult.Output) : Array.Empty<string>(),
-            known ? ParseList(appsResult.Output) : Array.Empty<string>());
+            known ? ParseList(devices.Output) : Array.Empty<string>(),
+            known ? ParseList(apps.Output) : Array.Empty<string>());
     }
 
+    /// <summary>
+    /// Whitelists this app, hides the given device and turns cloaking on - in one elevated batch,
+    /// so the user sees a single UAC prompt and the backup is captured in that same batch.
+    /// </summary>
     public async Task EnableAsync(string deviceInstanceId, CancellationToken cancellationToken = default)
     {
         EnsureInstalled();
@@ -81,20 +89,41 @@ public sealed class HidHideService
             throw new InvalidOperationException("تعذر تحديد مسار التطبيق الحالي.");
         }
 
-        var before = await GetStateAsync(cancellationToken).ConfigureAwait(false);
-        if (!before.StateKnown)
+        var commands = new List<string>
         {
-            throw new InvalidOperationException(
-                "تعذر قراءة إعدادات HidHide الحالية، لذلك لن يُجرى أي تغيير. شغّل التطبيق كمسؤول ثم أعد المحاولة.");
+            "--cloak-state",
+            "--dev-list",
+            "--app-list",
+            $"--app-reg \"{executable}\"",
+            $"--dev-hide \"{deviceInstanceId}\"",
+            "--cloak-on",
+            "--cloak-state"
+        };
+
+        var results = await RunElevatedBatchAsync(commands, cancellationToken).ConfigureAwait(false);
+        if (results.Count != commands.Count)
+        {
+            throw new InvalidOperationException("لم يكتمل تنفيذ أوامر HidHide. لم يتم تأكيد أي تغيير.");
         }
 
-        if (!File.Exists(BackupPath))
+        var applyFailed = results[3].Success && results[4].Success && results[5].Success ? null : results[3].Output;
+        if (applyFailed is not null)
+        {
+            throw new InvalidOperationException(
+                "فشل تفعيل HidHide. قد يكون الطلب أُلغي أو أن التعريف غير مثبت بشكل صحيح.\n" + applyFailed);
+        }
+
+        var beforeCloak = results[0];
+        var beforeDevices = results[1];
+        var beforeApps = results[2];
+
+        if (beforeCloak.Success && beforeDevices.Success && beforeApps.Success && !string.IsNullOrWhiteSpace(beforeCloak.Output))
         {
             var backup = new HidHideBackup
             {
-                HiddenDeviceIds = before.HiddenDevices.ToList(),
-                WhitelistedApps = before.WhitelistedApps.ToList(),
-                CloakWasOn = before.Cloaked
+                HiddenDeviceIds = ParseList(beforeDevices.Output).ToList(),
+                WhitelistedApps = ParseList(beforeApps.Output).ToList(),
+                CloakWasOn = IsOn(beforeCloak.Output)
             };
 
             Directory.CreateDirectory(Path.GetDirectoryName(BackupPath)!);
@@ -102,24 +131,23 @@ public sealed class HidHideService
                 .ConfigureAwait(false);
             AppLog.Info("HidHide backup written to " + BackupPath);
         }
-
-        // Whitelist first: cloaking before our process can see the device would break the bridge.
-        await RunRequiredAsync($"--app-reg \"{executable}\"", cancellationToken).ConfigureAwait(false);
-        await RunRequiredAsync($"--dev-hide \"{deviceInstanceId}\"", cancellationToken).ConfigureAwait(false);
-        await RunRequiredAsync("--cloak-on", cancellationToken).ConfigureAwait(false);
-
-        var after = await GetStateAsync(cancellationToken).ConfigureAwait(false);
-        if (!after.Cloaked)
+        else
         {
-            throw new InvalidOperationException("HidHide لم يؤكد حالة الإخفاء. راجع إعدادات HidHide يدويًا.");
+            // Restore remains safe: it only removes the entries added below.
+            AppLog.Warn("HidHide previous configuration could not be read; restore will undo this app's changes only.");
+        }
+
+        if (!IsOn(results[6].Output))
+        {
+            throw new InvalidOperationException("HidHide لم يؤكد حالة الإخفاء بعد التفعيل. راجع إعدادات HidHide يدويًا.");
         }
 
         AppLog.Info($"HidHide cloaking enabled for {deviceInstanceId}");
     }
 
     /// <summary>
-    /// Restores the exact configuration that existed before the app changed anything and
-    /// removes the entries added for this app. Safe to call when HidHide is not installed.
+    /// Removes only the entries this app added and re-applies the saved backup.
+    /// Uses a single elevated batch. Safe to call when HidHide is not installed.
     /// </summary>
     public async Task RestoreAsync(string? deviceInstanceId, CancellationToken cancellationToken = default)
     {
@@ -129,83 +157,69 @@ public sealed class HidHideService
         }
 
         var executable = Environment.ProcessPath;
-        HidHideBackup? backup = null;
+        var backup = LoadBackup();
+        var commands = new List<string>();
 
+        if (backup is not { CloakWasOn: true })
+        {
+            commands.Add("--cloak-off");
+        }
+
+        if (!string.IsNullOrWhiteSpace(deviceInstanceId) &&
+            (backup is null || !Contains(backup.HiddenDeviceIds, deviceInstanceId)))
+        {
+            commands.Add($"--dev-unhide \"{deviceInstanceId}\"");
+        }
+
+        if (!string.IsNullOrWhiteSpace(executable) &&
+            (backup is null || !Contains(backup.WhitelistedApps, executable)))
+        {
+            commands.Add($"--app-unreg \"{executable}\"");
+        }
+
+        if (backup is not null)
+        {
+            commands.AddRange(backup.HiddenDeviceIds.Select(id => $"--dev-hide \"{id}\""));
+            commands.AddRange(backup.WhitelistedApps.Select(app => $"--app-reg \"{app}\""));
+            if (backup.CloakWasOn)
+            {
+                commands.Add("--cloak-on");
+            }
+        }
+
+        if (commands.Count > 0)
+        {
+            await RunElevatedBatchAsync(commands, cancellationToken).ConfigureAwait(false);
+        }
+
+        TryDelete(BackupPath);
+        AppLog.Info("HidHide configuration restored.");
+    }
+
+    private HidHideBackup? LoadBackup()
+    {
         try
         {
-            if (File.Exists(BackupPath))
+            if (!File.Exists(BackupPath))
             {
-                backup = JsonSerializer.Deserialize<HidHideBackup>(await File.ReadAllTextAsync(BackupPath, cancellationToken).ConfigureAwait(false));
+                return null;
             }
+
+            return JsonSerializer.Deserialize<HidHideBackup>(File.ReadAllText(BackupPath));
         }
         catch (Exception ex)
         {
             AppLog.Warn("HidHide backup could not be read: " + ex.Message);
+            return null;
         }
-
-        var current = await GetStateAsync(cancellationToken).ConfigureAwait(false);
-
-        // Turn cloaking off first so the physical controller is usable again immediately.
-        if (backup is null || !backup.CloakWasOn)
-        {
-            await RunAsync("--cloak-off", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        var desiredDevices = backup?.HiddenDeviceIds ?? new List<string>();
-        var devicesDiff = HidHideDiff.Compute(current.HiddenDevices, desiredDevices);
-        foreach (var remove in devicesDiff.ToRemove)
-        {
-            await RunAsync($"--dev-unhide \"{remove}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!string.IsNullOrWhiteSpace(deviceInstanceId) &&
-            !desiredDevices.Contains(deviceInstanceId, StringComparer.OrdinalIgnoreCase))
-        {
-            await RunAsync($"--dev-unhide \"{deviceInstanceId}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        var desiredApps = backup?.WhitelistedApps ?? new List<string>();
-        var appsDiff = HidHideDiff.Compute(current.WhitelistedApps, desiredApps);
-        foreach (var remove in appsDiff.ToRemove)
-        {
-            await RunAsync($"--app-unreg \"{remove}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (!string.IsNullOrWhiteSpace(executable) &&
-            !desiredApps.Contains(executable, StringComparer.OrdinalIgnoreCase))
-        {
-            await RunAsync($"--app-unreg \"{executable}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        foreach (var add in devicesDiff.ToAdd)
-        {
-            await RunAsync($"--dev-hide \"{add}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        foreach (var add in appsDiff.ToAdd)
-        {
-            await RunAsync($"--app-reg \"{add}\"", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        if (backup is { CloakWasOn: true })
-        {
-            await RunAsync("--cloak-on", elevated: true, cancellationToken).ConfigureAwait(false);
-        }
-
-        try
-        {
-            if (File.Exists(BackupPath))
-            {
-                File.Delete(BackupPath);
-            }
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn("HidHide backup could not be deleted: " + ex.Message);
-        }
-
-        AppLog.Info("HidHide configuration restored.");
     }
+
+    private static bool Contains(IEnumerable<string> values, string value) =>
+        values.Any(v => string.Equals(v, value, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsOn(string output) =>
+        output.Contains("on", StringComparison.OrdinalIgnoreCase) &&
+        !output.Contains("off", StringComparison.OrdinalIgnoreCase);
 
     private void EnsureInstalled()
     {
@@ -216,37 +230,12 @@ public sealed class HidHideService
         }
     }
 
-    private async Task<CliResult> ReadAsync(string arguments, CancellationToken cancellationToken)
-    {
-        var result = await RunAsync(arguments, elevated: false, cancellationToken).ConfigureAwait(false);
-        if (result.Success || !string.IsNullOrWhiteSpace(result.Output))
-        {
-            return result;
-        }
-
-        return await RunAsync(arguments, elevated: true, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task RunRequiredAsync(string arguments, CancellationToken cancellationToken)
-    {
-        var result = await RunAsync(arguments, elevated: true, cancellationToken).ConfigureAwait(false);
-        if (!result.Success)
-        {
-            throw new InvalidOperationException($"فشل تنفيذ HidHideCLI {arguments}: {result.Output}");
-        }
-    }
-
-    private async Task<CliResult> RunAsync(string arguments, bool elevated, CancellationToken cancellationToken)
+    private async Task<CliResult> RunDirectAsync(string arguments, CancellationToken cancellationToken)
     {
         var cli = CliPath ?? throw new InvalidOperationException("HidHide غير مثبت.");
 
         try
         {
-            if (elevated)
-            {
-                return await RunElevatedScriptAsync(cli, arguments, cancellationToken).ConfigureAwait(false);
-            }
-
             var startInfo = new ProcessStartInfo(cli, arguments)
             {
                 UseShellExecute = false,
@@ -265,44 +254,46 @@ public sealed class HidHideService
             var standardError = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 
-            var output = (standardOutput + standardError).Trim();
-            return new CliResult(process.ExitCode == 0, output);
-        }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
-        {
-            LastError = "تم إلغاء طلب صلاحيات المسؤول.";
-            return new CliResult(false, LastError);
+            return new CliResult(process.ExitCode == 0, (standardOutput + standardError).Trim());
         }
         catch (Exception ex)
         {
             LastError = ex.Message;
             AppLog.Warn($"HidHideCLI '{arguments}' failed: {ex.Message}");
-            return new CliResult(false, ex.Message);
+            return new CliResult(false, string.Empty);
         }
     }
 
     /// <summary>
-    /// Runs HidHideCLI elevated through a temporary .cmd script. The script redirects stdout and
-    /// the exit code to files so an elevated run still reports what it did; passing the arguments
-    /// through a file avoids cmd.exe quoting problems with device instance ids.
+    /// Runs several HidHideCLI commands in one elevated cmd script. Each command writes its own
+    /// stdout/stderr and exit code to a temporary file, so the results are known even though the
+    /// elevated process window is hidden. Arguments live in the script file, which avoids the
+    /// nesting and '&amp;' quoting problems of passing device instance ids through cmd /c.
     /// </summary>
-    private static async Task<CliResult> RunElevatedScriptAsync(string cli, string arguments, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<CliResult>> RunElevatedBatchAsync(
+        IReadOnlyList<string> commands,
+        CancellationToken cancellationToken)
     {
+        var cli = CliPath ?? throw new InvalidOperationException("HidHide غير مثبت.");
         var directory = Path.Combine(Path.GetTempPath(), "DualSenseXboxBridge");
         Directory.CreateDirectory(directory);
 
         var id = Guid.NewGuid().ToString("N");
         var scriptPath = Path.Combine(directory, id + ".cmd");
-        var outputPath = Path.Combine(directory, id + ".out");
-        var exitPath = Path.Combine(directory, id + ".code");
+        var outputs = commands.Select((_, index) => Path.Combine(directory, $"{id}.{index}.out")).ToList();
+        var codes = commands.Select((_, index) => Path.Combine(directory, $"{id}.{index}.code")).ToList();
 
-        var script = "@echo off\r\n" +
-                     $"\"{cli}\" {arguments} > \"{outputPath}\" 2>&1\r\n" +
-                     $"echo %ERRORLEVEL%> \"{exitPath}\"\r\n";
+        var builder = new System.Text.StringBuilder();
+        builder.AppendLine("@echo off");
+        for (var i = 0; i < commands.Count; i++)
+        {
+            builder.AppendLine($"\"{cli}\" {commands[i]} > \"{outputs[i]}\" 2>&1");
+            builder.AppendLine($"echo %ERRORLEVEL%> \"{codes[i]}\"");
+        }
 
         try
         {
-            await File.WriteAllTextAsync(scriptPath, script, cancellationToken).ConfigureAwait(false);
+            await File.WriteAllTextAsync(scriptPath, builder.ToString(), cancellationToken).ConfigureAwait(false);
 
             var startInfo = new ProcessStartInfo(scriptPath)
             {
@@ -314,51 +305,52 @@ public sealed class HidHideService
             using var process = Process.Start(startInfo);
             if (process is null)
             {
-                return new CliResult(false, "تعذر تشغيل HidHideCLI بصلاحيات المسؤول.");
+                return Array.Empty<CliResult>();
             }
 
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
 
-            var output = File.Exists(outputPath)
-                ? (await File.ReadAllTextAsync(outputPath, cancellationToken).ConfigureAwait(false)).Trim()
-                : string.Empty;
-
-            var exitCode = 1;
-            if (File.Exists(exitPath))
+            var results = new List<CliResult>(commands.Count);
+            for (var i = 0; i < commands.Count; i++)
             {
-                var text = (await File.ReadAllTextAsync(exitPath, cancellationToken).ConfigureAwait(false)).Trim();
-                if (int.TryParse(text, out var parsed))
+                var output = File.Exists(outputs[i])
+                    ? (await File.ReadAllTextAsync(outputs[i], cancellationToken).ConfigureAwait(false)).Trim()
+                    : string.Empty;
+
+                var code = 1;
+                if (File.Exists(codes[i]))
                 {
-                    exitCode = parsed;
+                    var text = (await File.ReadAllTextAsync(codes[i], cancellationToken).ConfigureAwait(false)).Trim();
+                    if (int.TryParse(text, out var parsed))
+                    {
+                        code = parsed;
+                    }
                 }
+
+                results.Add(new CliResult(code == 0, output));
             }
 
-            return new CliResult(exitCode == 0, output);
+            return results;
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
-            return new CliResult(false, "تم إلغاء طلب صلاحيات المسؤول.");
+            LastError = "تم إلغاء طلب صلاحيات المسؤول.";
+            AppLog.Warn(LastError);
+            return Array.Empty<CliResult>();
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            AppLog.Warn("HidHide elevated batch failed: " + ex.Message);
+            return Array.Empty<CliResult>();
         }
         finally
         {
             TryDelete(scriptPath);
-            TryDelete(outputPath);
-            TryDelete(exitPath);
-        }
-    }
-
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            if (File.Exists(path))
+            foreach (var path in outputs.Concat(codes))
             {
-                File.Delete(path);
+                TryDelete(path);
             }
-        }
-        catch
-        {
-            // Temp files are best effort.
         }
     }
 
@@ -425,12 +417,12 @@ public sealed class HidHideService
     private static IEnumerable<string> ReadInstallDirectories()
     {
         const string keyPath = @"SOFTWARE\Nefarius Software Solutions\HidHide";
-        foreach (var view in new[] { RegistryView.Registry64, RegistryView.Registry32 })
+        foreach (var view in new[] { Microsoft.Win32.RegistryView.Registry64, Microsoft.Win32.RegistryView.Registry32 })
         {
             string? directory = null;
             try
             {
-                using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, view);
+                using var baseKey = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, view);
                 using var key = baseKey.OpenSubKey(keyPath);
                 directory = key?.GetValue("InstallDir") as string;
             }
@@ -443,6 +435,21 @@ public sealed class HidHideService
             {
                 yield return directory!;
             }
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+            // Temp files are best effort.
         }
     }
 

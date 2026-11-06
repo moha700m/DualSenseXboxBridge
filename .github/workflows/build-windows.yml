@@ -11,15 +11,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Extract source package
-        shell: pwsh
-        run: Expand-Archive -Path .\DualSenseXboxBridge-usb-alpha.zip -DestinationPath .\source
       - name: Restore
-        run: dotnet restore .\source\DualSenseXboxBridge\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj
+        run: dotnet restore .\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj
       - name: Build
-        run: dotnet build .\source\DualSenseXboxBridge\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj -c Release
+        run: dotnet build .\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj -c Release --no-restore
       - name: Publish
-        run: dotnet publish .\source\DualSenseXboxBridge\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\artifacts\win-x64
+        run: dotnet publish .\src\DualSenseXboxBridge\DualSenseXboxBridge.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\artifacts\win-x64
       - uses: actions/upload-artifact@v4
         with:
           name: DualSenseXboxBridge-win-x64

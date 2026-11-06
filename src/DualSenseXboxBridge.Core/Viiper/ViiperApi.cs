@@ -2,13 +2,13 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
-namespace DualSenseXboxBridge.Backends;
+namespace DualSenseXboxBridge.Core.Viiper;
 
 /// <summary>
 /// Thin client for the VIIPER TCP API. Requests are null terminated, the server closes the
 /// connection after each response, and errors arrive as RFC 7807 style JSON.
 /// </summary>
-internal static class ViiperApi
+public static class ViiperApi
 {
     public static async Task<JsonDocument> SendAsync(string host, int port, string request, CancellationToken cancellationToken)
     {
